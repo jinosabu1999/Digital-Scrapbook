@@ -1,82 +1,37 @@
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import { Heart } from 'lucide-react'
+import { Button } from "@/components/ui/button"
 import { useMemories } from "@/context/memory-context"
-import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
 interface FavoriteButtonProps {
   memoryId: string
   isLiked?: boolean
   className?: string
-  size?: "sm" | "default" | "lg"
-  variant?: "default" | "outline" | "ghost"
 }
 
-export function FavoriteButton({ 
-  memoryId, 
-  isLiked = false, 
-  className, 
-  size = "default",
-  variant = "outline"
-}: FavoriteButtonProps) {
+export function FavoriteButton({ memoryId, isLiked, className }: FavoriteButtonProps) {
   const { toggleMemoryLike } = useMemories()
-  const { toast } = useToast()
-  const [isToggling, setIsToggling] = useState(false)
 
-  const handleToggle = async () => {
-    if (isToggling) return
-    
-    setIsToggling(true)
-    
-    try {
-      toggleMemoryLike(memoryId)
-      
-      toast({
-        title: isLiked ? "Removed from favorites" : "Added to favorites",
-        description: isLiked 
-          ? "Memory removed from your favorites" 
-          : "Memory added to your favorites",
-      })
-    } catch (error) {
-      console.error("Error toggling favorite:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update favorite status",
-        variant: "destructive",
-      })
-    } finally {
-      setIsToggling(false)
-    }
+  const handleToggle = () => {
+    toggleMemoryLike(memoryId)
   }
 
   return (
     <Button
-      variant={variant}
-      size={size}
+      variant="ghost"
+      size="sm"
       onClick={handleToggle}
-      disabled={isToggling}
-      className={cn(
-        "transition-colors",
-        isLiked && "text-red-500 hover:text-red-600",
-        className
-      )}
+      className={cn("h-8 w-8 p-0", className)}
     >
-      <Heart 
+      <Heart
         className={cn(
-          "h-4 w-4",
-          size === "sm" && "h-3 w-3",
-          size === "lg" && "h-5 w-5",
-          isLiked && "fill-current"
-        )} 
+          "h-4 w-4 transition-colors",
+          isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground hover:text-red-500"
+        )}
       />
-      <span className="sr-only">
-        {isLiked ? "Remove from favorites" : "Add to favorites"}
-      </span>
+      <span className="sr-only">{isLiked ? "Remove from favorites" : "Add to favorites"}</span>
     </Button>
   )
 }
-
-export default FavoriteButton
