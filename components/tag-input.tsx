@@ -1,109 +1,88 @@
 "use client"
 
-import type React from "react"
-
-import { useState, type KeyboardEvent, useRef } from "react"
+import { useState, KeyboardEvent } from "react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { X } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { X, Plus } from 'lucide-react'
+import { Label } from "@/components/ui/label"
 
 interface TagInputProps {
   tags: string[]
-  setTags: (tags: string[]) => void
+  onTagsChange: (tags: string[]) => void
   placeholder?: string
   className?: string
 }
 
-export function TagInput({ tags, setTags, placeholder = "Add tag...", className }: TagInputProps) {
+export function TagInput({ tags, onTagsChange, placeholder = "Add tags...", className }: TagInputProps) {
   const [inputValue, setInputValue] = useState("")
-  const inputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
 
   const addTag = (tag: string) => {
     const trimmedTag = tag.trim()
-    if (trimmedTag !== "" && !tags.includes(trimmedTag)) {
-      setTags([...tags, trimmedTag])
+    if (trimmedTag && !tags.includes(trimmedTag)) {
+      onTagsChange([...tags, trimmedTag])
     }
     setInputValue("")
-  }
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && inputValue.trim() !== "") {
-      e.preventDefault()
-      addTag(inputValue)
-    } else if (e.key === "Backspace" && inputValue === "" && tags.length > 0) {
-      // Remove the last tag when backspace is pressed and input is empty
-      setTags(tags.slice(0, -1))
-    } else if (e.key === "," && inputValue.trim() !== "") {
-      // Allow adding tags with comma
-      e.preventDefault()
-      addTag(inputValue)
-    }
   }
 
   const removeTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove))
+    onTagsChange(tags.filter(tag => tag !== tagToRemove))
   }
 
-  // Focus the input when clicking on the container
-  const handleContainerClick = () => {
-    if (inputRef.current) {
-      inputRef.current.focus()
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault()
+      addTag(inputValue)
+    } else if (e.key === "Backspace" && !inputValue && tags.length > 0) {
+      removeTag(tags[tags.length - 1])
     }
   }
 
-  // Handle paste events to add multiple tags at once
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault()
-    const pastedText = e.clipboardData.getData("text")
-    const pastedTags = pastedText
-      .split(/[,\n\r]/)
-      .map((tag) => tag.trim())
-      .filter((tag) => tag !== "")
-
-    const newTags = [...tags]
-    pastedTags.forEach((tag) => {
-      if (!newTags.includes(tag)) {
-        newTags.push(tag)
-      }
-    })
-
-    setTags(newTags)
-    setInputValue("")
-  }
-
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "flex flex-wrap gap-2 p-2 border rounded-md min-h-10 focus-within:ring-1 focus-within:ring-ring focus-within:border-input",
-        className,
-      )}
-      onClick={handleContainerClick}
-    >
-      {tags.map((tag) => (
-        <Badge key={tag} variant="secondary" className="flex items-center gap-1 text-sm py-1 px-2">
-          {tag}
-          <X
-            className="h-3 w-3 cursor-pointer hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation()
-              removeTag(tag)
-            }}
-          />
-        </Badge>
-      ))}
-      <Input
-        ref={inputRef}
-        type="text"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onPaste={handlePaste}
-        placeholder={tags.length === 0 ? placeholder : ""}
-        className="flex-1 min-w-[120px] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-7"
-      />
+    <div className={className}>
+      <Label className="text-sm font-medium mb-2 block">Tags</Label>
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2 min-h-[2.5rem] p-2 border rounded-md">
+          {tags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="gap-1">
+              {tag}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 p-0 hover:bg-transparent"
+                onClick={() => removeTag(tag)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
+          ))}
+          <div className="flex items-center gap-2 flex-1 min-w-[120px]">
+            <Input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={tags.length === 0 ? placeholder : ""}
+              className="border-0 shadow-none p-0 h-6 focus-visible:ring-0"
+            />
+            {inputValue && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 p-0"
+                onClick={() => addTag(inputValue)}
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Press Enter or comma to add tags. Click × to remove.
+        </p>
+      </div>
     </div>
   )
 }

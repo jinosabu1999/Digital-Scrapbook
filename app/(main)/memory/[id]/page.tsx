@@ -62,11 +62,26 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
   }
 
   const handleDownload = () => {
-    if (!memory?.mediaUrl) return
+    if (!memory?.mediaUrl) {
+      toast({
+        title: "Download Failed",
+        description: "No media found to download.",
+        variant: "destructive",
+      })
+      return
+    }
     
+    // For Base64 data URLs, create a blob and then a download link
     const link = document.createElement('a')
     link.href = memory.mediaUrl
-    link.download = `${memory.title}.${memory.type === 'photo' ? 'jpg' : memory.type === 'video' ? 'mp4' : 'mp3'}`
+    
+    // Determine file extension based on type
+    let fileExtension = 'bin'
+    if (memory.type === 'photo') fileExtension = 'png' // Assuming most photos are png/jpg
+    else if (memory.type === 'video') fileExtension = 'mp4'
+    else if (memory.type === 'audio') fileExtension = 'mp3'
+
+    link.download = `${memory.title || 'memory'}.${fileExtension}`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -293,7 +308,7 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
                     )}
                   </div>
 
-                  {memory.tags.length > 0 && (
+                  {memory.tags && memory.tags.length > 0 && (
                     <>
                       <Separator />
                       <div className="flex items-start gap-3">
@@ -321,7 +336,7 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
                           <p className="text-sm font-medium">Time Capsule</p>
                           <p className="text-sm text-muted-foreground">
                             {memory.unlockDate 
-                              ? `Unlocked on ${format(new Date(memory.unlockDate), "MMMM d, yyyy")}`
+                              ? `Unlocks on ${format(new Date(memory.unlockDate), "MMMM d, yyyy")}`
                               : "Time capsule memory"
                             }
                           </p>

@@ -2,9 +2,9 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Image, Plus, FolderOpen, Heart, Search } from 'lucide-react'
-import { cn } from "@/lib/utils"
+import { Home, Heart, Plus, Clock, Search } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 const navItems = [
   {
@@ -14,8 +14,8 @@ const navItems = [
   },
   {
     href: "/memories",
-    label: "Memories", 
-    icon: Image,
+    label: "Memories",
+    icon: Search,
   },
   {
     href: "/upload",
@@ -24,19 +24,14 @@ const navItems = [
     isSpecial: true,
   },
   {
-    href: "/albums",
-    label: "Albums",
-    icon: FolderOpen,
-  },
-  {
     href: "/favorites",
     label: "Favorites",
     icon: Heart,
   },
   {
-    href: "/search",
-    label: "Search",
-    icon: Search,
+    href: "/timeline",
+    label: "Timeline",
+    icon: Clock,
   },
 ]
 
@@ -44,7 +39,7 @@ export function MobileNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t md:hidden">
       <div className="flex items-center justify-around px-2 py-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href
@@ -52,17 +47,14 @@ export function MobileNav() {
 
           if (item.isSpecial) {
             return (
-              <Button
-                key={item.href}
-                asChild
-                size="icon"
-                className="h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg"
-              >
-                <Link href={item.href}>
-                  <Icon className="h-6 w-6" />
-                  <span className="sr-only">{item.label}</span>
-                </Link>
-              </Button>
+              <Link key={item.href} href={item.href}>
+                <Button
+                  size="sm"
+                  className="h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg"
+                >
+                  <Icon className="h-5 w-5" />
+                </Button>
+              </Link>
             )
           }
 
@@ -71,14 +63,14 @@ export function MobileNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs transition-colors",
+                "flex flex-col items-center justify-center px-3 py-2 text-xs font-medium transition-colors",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <Icon className={cn("h-5 w-5", isActive && "fill-current")} />
-              <span className="truncate">{item.label}</span>
+              <Icon className={cn("h-5 w-5 mb-1", isActive && "text-primary")} />
+              <span className={cn(isActive && "text-primary")}>{item.label}</span>
             </Link>
           )
         })}
@@ -86,5 +78,3 @@ export function MobileNav() {
     </nav>
   )
 }
-
-export default MobileNav

@@ -3,28 +3,27 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Upload, X } from 'lucide-react'
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import { useMemories } from "@/context/memory-context"
 import { TagInput } from "@/components/tag-input"
 import { MoodSelector } from "@/components/mood-selector"
 import { useToast } from "@/hooks/use-toast"
+import { CalendarIcon, Upload, Image, Video, Mic, FileText, MapPin, Clock, XCircle, CheckCircle, Loader2 } from 'lucide-react'
+import { format } from "date-fns"
+import { cn } from "@/lib/utils"
+import { useMemories } from "@/context/memory-context"
 import type { MemoryType, MoodType } from "@/types"
 
 export default function UploadPage() {
   const router = useRouter()
   const { addMemory } = useMemories()
   const { toast } = useToast()
-  
+
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [date, setDate] = useState<Date>(new Date())
@@ -32,19 +31,34 @@ export default function UploadPage() {
   const [tags, setTags] = useState<string[]>([])
   const [type, setType] = useState<MemoryType>("photo")
   const [content, setContent] = useState("")
-  const [mediaFile, setMediaFile] = useState<File | null>(null)
+  const [mediaUrl, setMediaUrl] = useState("") // Stores Base64 string
+  const [mediaFileName, setMediaFileName] = useState("")
   const [isTimeCapsule, setIsTimeCapsule] = useState(false)
-  const [unlockDate, setUnlockDate] = useState<Date>()
-  const [mood, setMood] = useState<MoodType>()
+  const [unlockDate, setUnlockDate] = useState<Date | undefined>(undefined)
+  const [mood, setMood] = useState<MoodType | undefined>(undefined)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setMediaFile(file)
-      // Create a URL for preview
-      const url = URL.createObjectURL(file)
-      // You might want to store this URL or handle it differently
+      setMediaFileName(file.name)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setMediaUrl(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+      
+      // Auto-detect type based on file
+      if (file.type.startsWith('image/')) {
+        setType('photo')
+      } else if (file.type.startsWith('video/')) {
+        setType('video')
+      } else if (file.type.startsWith('audio/')) {
+        setType('audio')
+      }
+    } else {
+      setMediaFileName("")
+      setMediaUrl("")
     }
   }
 
@@ -53,7 +67,7 @@ export default function UploadPage() {
     
     if (!title.trim()) errors.push("Title")
     if (!date) errors.push("Date")
-    if (type !== "text" && !mediaFile) errors.push("Media file")
+    if (type !== "text" && !mediaUrl) errors.push("Media file")
     if (type === "text" && !content.trim()) errors.push("Text content")
     if (isTimeCapsule && !unlockDate) errors.push("Unlock date for time capsule")
     
@@ -66,7 +80,7 @@ export default function UploadPage() {
     const validationErrors = validateForm()
     if (validationErrors.length > 0) {
       toast({
-        title: "❌ Missing required fields",
+        title: "⚠️ Missing Required Fields",
         description: `Please provide: ${validationErrors.join(", ")}`,
         variant: "destructive",
       })
@@ -76,27 +90,21 @@ export default function UploadPage() {
     setIsSubmitting(true)
 
     try {
-      // Create media URL from file if exists
-      let mediaUrl = ""
-      if (mediaFile) {
-        mediaUrl = URL.createObjectURL(mediaFile)
-      }
-
       const memoryData = {
         title: title.trim(),
         description: description.trim() || undefined,
         date,
         location: location.trim() || undefined,
-        tags: tags.length > 0 ? tags : undefined,
+        tags: tags || [], // Ensure tags is always an array
         type,
-        content: content.trim() || undefined,
-        mediaUrl: mediaUrl || undefined,
+        content: type === "text" ? (content.trim() || undefined) : undefined,
+        mediaUrl: type !== "text" ? (mediaUrl || undefined) : undefined,
         isTimeCapsule,
         unlockDate: isTimeCapsule ? unlockDate : undefined,
         mood,
       }
 
-      addMemory(memoryData)
+      const memoryId = addMemory(memoryData)
       
       // Reset form
       setTitle("")
@@ -106,17 +114,23 @@ export default function UploadPage() {
       setTags([])
       setType("photo")
       setContent("")
-      setMediaFile(null)
+      setMediaUrl("")
+      setMediaFileName("")
       setIsTimeCapsule(false)
       setUnlockDate(undefined)
       setMood(undefined)
 
-      // Navigate back to dashboard
-      router.push("/")
-    } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to save memory. Please try again.",
+        title: "🎉 Memory Created!",
+        description: "Your memory has been successfully saved to your collection.",
+      })
+
+      router.push(`/memory/${memoryId}`)
+    } catch (error) {
+      console.error("Error creating memory:", error)
+      toast({
+        title: "❌ Error",
+        description: "Failed to create memory. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -125,167 +139,222 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <Card>
-        <CardHeader>
-          <CardTitle>Add New Memory</CardTitle>
-          <CardDescription>
-            Capture and preserve your precious moments
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Title */}
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Give your memory a title..."
-                className={cn(!title.trim() && "border-red-300")}
-              />
-            </div>
+    <div className="container mx-auto py-6 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Add New Memory</h1>
+          <p className="text-muted-foreground">Capture and preserve your precious moments</p>
+        </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Tell the story behind this memory..."
-                rows={3}
-              />
-            </div>
-
-            {/* Date */}
-            <div className="space-y-2">
-              <Label>Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground border-red-300"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(date) => date && setDate(date)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Location */}
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Where was this memory made?"
-              />
-            </div>
-
-            {/* Memory Type */}
-            <div className="space-y-2">
-              <Label>Memory Type</Label>
-              <Select value={type} onValueChange={(value: MemoryType) => setType(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="photo">📸 Photo</SelectItem>
-                  <SelectItem value="video">🎥 Video</SelectItem>
-                  <SelectItem value="audio">🎵 Audio</SelectItem>
-                  <SelectItem value="text">📝 Text</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Media Upload */}
-            {type !== "text" && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Information</CardTitle>
+              <CardDescription>Tell us about your memory</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="media">Upload {type} *</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <input
-                    id="media"
-                    type="file"
-                    onChange={handleFileChange}
-                    accept={
-                      type === "photo" ? "image/*" :
-                      type === "video" ? "video/*" :
-                      type === "audio" ? "audio/*" : "*/*"
-                    }
-                    className="hidden"
-                  />
-                  <Label htmlFor="media" className="cursor-pointer">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-600">
-                      Click to upload or drag and drop
-                    </p>
-                    {mediaFile && (
-                      <p className="mt-2 text-sm text-green-600">
-                        Selected: {mediaFile.name}
-                      </p>
-                    )}
-                  </Label>
-                </div>
-              </div>
-            )}
-
-            {/* Text Content */}
-            {type === "text" && (
-              <div className="space-y-2">
-                <Label htmlFor="content">Content *</Label>
-                <Textarea
-                  id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Write your memory here..."
-                  rows={6}
-                  className={cn(!content.trim() && "border-red-300")}
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Give your memory a title..."
+                  className={cn(!title.trim() && "border-red-300 focus:border-red-500")}
                 />
               </div>
-            )}
 
-            {/* Tags */}
-            <div className="space-y-2">
-              <Label>Tags</Label>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe your memory..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Date *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !date && "text-muted-foreground border-red-300"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date ? format(date, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(date) => date && setDate(date)}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="Where was this?"
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Media Upload */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Media & Content</CardTitle>
+              <CardDescription>Add photos, videos, audio, or text content</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Memory Type</Label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { value: "photo", icon: Image, label: "Photo" },
+                    { value: "video", icon: Video, label: "Video" },
+                    { value: "audio", icon: Mic, label: "Audio" },
+                    { value: "text", icon: FileText, label: "Text" },
+                  ].map(({ value, icon: Icon, label }) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={type === value ? "default" : "outline"}
+                      onClick={() => {
+                        setType(value as MemoryType);
+                        // Clear media/content if type changes
+                        if (value === "text") {
+                          setMediaUrl("");
+                          setMediaFileName("");
+                        } else {
+                          setContent("");
+                        }
+                      }}
+                      className="h-12 flex-col space-y-1"
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="text-xs">{label}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {type !== "text" && (
+                <div className="space-y-2">
+                  <Label htmlFor="media">Upload File *</Label>
+                  <div className={cn(
+                    "border-2 border-dashed rounded-lg p-6 text-center",
+                    !mediaUrl && "border-red-300 focus-within:border-red-500",
+                    mediaUrl && "border-green-500"
+                  )}>
+                    <input
+                      id="media"
+                      type="file"
+                      onChange={handleFileUpload}
+                      accept={
+                        type === "photo" ? "image/*" :
+                        type === "video" ? "video/*" :
+                        type === "audio" ? "audio/*" : "*/*"
+                      }
+                      className="hidden"
+                    />
+                    <Label htmlFor="media" className="cursor-pointer block">
+                      <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                      <p className="mt-2 text-sm text-gray-600">
+                        Click to upload or drag and drop
+                      </p>
+                      {mediaFileName && (
+                        <p className="mt-2 text-sm flex items-center justify-center text-green-600">
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Selected: {mediaFileName}
+                        </p>
+                      )}
+                      {!mediaFileName && !mediaUrl && (
+                        <p className="mt-2 text-sm flex items-center justify-center text-red-500">
+                          <XCircle className="h-4 w-4 mr-1" />
+                          No file selected
+                        </p>
+                      )}
+                    </Label>
+                  </div>
+                </div>
+              )}
+
+              {type === "text" && (
+                <div className="space-y-2">
+                  <Label htmlFor="content">Content *</Label>
+                  <Textarea
+                    id="content"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Write your memory content here..."
+                    rows={4}
+                    className={cn(!content.trim() && "border-red-300 focus:border-red-500")}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tags and Mood */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tags & Mood</CardTitle>
+              <CardDescription>Organize and categorize your memory</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <TagInput
                 tags={tags}
                 onTagsChange={setTags}
                 placeholder="Add tags to organize your memory..."
               />
-            </div>
 
-            {/* Mood */}
-            <div className="space-y-2">
-              <Label>Mood</Label>
-              <MoodSelector value={mood} onValueChange={setMood} />
-            </div>
+              <MoodSelector
+                selectedMood={mood}
+                onMoodChange={setMood}
+              />
+            </CardContent>
+          </Card>
 
-            {/* Time Capsule */}
-            <div className="space-y-4">
+          {/* Time Capsule */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Time Capsule</CardTitle>
+              <CardDescription>Lock this memory until a future date</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Switch
-                  id="time-capsule"
+                  id="timecapsule"
                   checked={isTimeCapsule}
                   onCheckedChange={setIsTimeCapsule}
                 />
-                <Label htmlFor="time-capsule">Make this a time capsule</Label>
+                <Label htmlFor="timecapsule" className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Make this a time capsule
+                </Label>
               </div>
-              
+
               {isTimeCapsule && (
                 <div className="space-y-2">
                   <Label>Unlock Date *</Label>
@@ -299,10 +368,10 @@ export default function UploadPage() {
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {unlockDate ? format(unlockDate, "PPP") : "When should this unlock?"}
+                        {unlockDate ? format(unlockDate, "PPP") : "Pick unlock date"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
                         selected={unlockDate}
@@ -312,17 +381,40 @@ export default function UploadPage() {
                       />
                     </PopoverContent>
                   </Popover>
+                  <p className="text-sm text-muted-foreground">
+                    This memory will be hidden until the unlock date
+                  </p>
                 </div>
               )}
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Submit Button */}
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Memory"}
+          {/* Submit Button */}
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+              disabled={isSubmitting}
+            >
+              Cancel
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Save Memory
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

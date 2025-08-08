@@ -1,7 +1,7 @@
 "use client"
 
-import { Heart } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import { Heart } from 'lucide-react'
 import { useMemories } from "@/context/memory-context"
 import { cn } from "@/lib/utils"
 
@@ -11,19 +11,23 @@ interface FavoriteButtonProps {
   className?: string
 }
 
-export function FavoriteButton({ memoryId, isLiked, className }: FavoriteButtonProps) {
+export function FavoriteButton({ memoryId, isLiked = false, className }: FavoriteButtonProps) {
   const { toggleMemoryLike } = useMemories()
 
   const handleToggle = () => {
-    toggleMemoryLike(memoryId)
+    try {
+      toggleMemoryLike(memoryId)
+    } catch (error) {
+      console.error("Error toggling favorite:", error)
+    }
   }
 
   return (
     <Button
       variant="ghost"
-      size="sm"
+      size="icon"
       onClick={handleToggle}
-      className={cn("h-8 w-8 p-0", className)}
+      className={cn("h-8 w-8", className)}
     >
       <Heart
         className={cn(
