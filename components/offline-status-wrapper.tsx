@@ -40,4 +40,3 @@ export function OfflineStatusWrapper() {
 
   return <OfflineStatusComponent />
 }
-

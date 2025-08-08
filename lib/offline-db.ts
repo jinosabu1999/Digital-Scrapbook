@@ -100,4 +100,3 @@ export async function getOfflineData(store: string): Promise<any[]> {
     return []
   }
 }
-

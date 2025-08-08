@@ -416,4 +416,3 @@ export default function AlbumDetailPage({ params }: { params: { id: string } }) 
     </div>
   )
 }
-

@@ -12,13 +12,14 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { CalendarIcon, ImageIcon, Video, Mic, FileText, MapPin, UploadIcon, X, Loader2 } from "lucide-react"
+import { CalendarIcon, ImageIcon, Video, Mic, FileText, MapPin, UploadIcon, X, Loader2, AlertCircle } from 'lucide-react'
 import { TagInput } from "@/components/tag-input"
 import { Switch } from "@/components/ui/switch"
 import { useMemories, type MemoryType } from "@/context/memory-context"
 import { getFileDataUrl, isValidFileType, getFileSize } from "@/lib/file-utils"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { MoodSelector, type MoodType } from "@/components/mood-selector"
 
 export default function UploadPage() {
   const router = useRouter()
@@ -36,6 +37,7 @@ export default function UploadPage() {
   const [textContent, setTextContent] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedMood, setSelectedMood] = useState<MoodType | undefined>()
 
   // Popover states
   const [dateOpen, setDateOpen] = useState(false)
@@ -182,44 +184,49 @@ export default function UploadPage() {
     }
   }
 
-  // Handle form submission
+  // Handle form submission with improved validation
   const handleSave = async () => {
     setError(null)
+    const missingFields: string[] = []
 
     // Validate required fields
     if (!title.trim()) {
-      setError("Title is required")
-      return
+      missingFields.push("Title")
     }
 
     if (!date) {
-      setError("Date is required")
-      return
+      missingFields.push("Date")
     }
 
     if (isTimeCapsule && !unlockDate) {
-      setError("Unlock date is required for time capsules")
-      return
+      missingFields.push("Unlock date for time capsule")
     }
 
     // Validate media based on type
     if (activeTab === "photo" && !photoFile) {
-      setError("Please upload a photo")
-      return
+      missingFields.push("Photo upload")
     }
 
     if (activeTab === "video" && !videoFile) {
-      setError("Please upload a video")
-      return
+      missingFields.push("Video upload")
     }
 
     if (activeTab === "audio" && !audioFile) {
-      setError("Please upload an audio file")
-      return
+      missingFields.push("Audio upload")
     }
 
     if (activeTab === "text" && !textContent.trim()) {
-      setError("Please enter some text content")
+      missingFields.push("Text content")
+    }
+
+    // Show improved validation toast
+    if (missingFields.length > 0) {
+      toast({
+        title: "Missing Required Information",
+        description: `Please provide: ${missingFields.join(", ")}`,
+        variant: "destructive",
+        duration: 5000,
+      })
       return
     }
 
@@ -244,19 +251,25 @@ export default function UploadPage() {
         mediaUrl: mediaUrl || undefined,
         isTimeCapsule,
         unlockDate: isTimeCapsule ? unlockDate : undefined,
+        mood: selectedMood,
       })
 
       toast({
-        title: "Success!",
-        description: "Memory saved successfully!",
-        variant: "success",
+        title: "Memory Saved Successfully! 🎉",
+        description: "Your memory has been added to your collection",
+        duration: 3000,
       })
 
       // Redirect to the memory detail page
       router.push(`/memory/${memoryId}`)
     } catch (err) {
       console.error("Error saving memory:", err)
-      setError("An unexpected error occurred. Please try again.")
+      toast({
+        title: "Save Failed",
+        description: "Something went wrong while saving your memory. Please try again.",
+        variant: "destructive",
+        duration: 5000,
+      })
     } finally {
       setIsSaving(false)
     }
@@ -297,6 +310,7 @@ export default function UploadPage() {
 
         {error && (
           <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -467,12 +481,13 @@ export default function UploadPage() {
             </TabsContent>
 
             <div className="grid w-full gap-1.5">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">Title *</Label>
               <Input
                 id="title"
                 placeholder="Give your memory a title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                className={!title.trim() ? "border-red-300 focus:border-red-500" : ""}
               />
             </div>
 
@@ -487,13 +502,17 @@ export default function UploadPage() {
             </div>
 
             <div className="grid w-full gap-1.5">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">Date *</Label>
               <Popover open={dateOpen} onOpenChange={setDateOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     id="date"
                     variant={"outline"}
-                    className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                    className={cn(
+                      "w-full justify-start text-left font-normal", 
+                      !date && "text-muted-foreground",
+                      !date && "border-red-300"
+                    )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {date ? format(date, "PPP") : "Select date"}
@@ -515,7 +534,7 @@ export default function UploadPage() {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                 />
-                <Button variant="outline" className="rounded-l-none border-l-0">
+                <Button variant="outline" className="rounded-l-none border-l-0 bg-transparent">
                   <MapPin className="h-4 w-4" />
                 </Button>
               </div>
@@ -526,6 +545,8 @@ export default function UploadPage() {
               <TagInput placeholder="Add tags (press Enter)" tags={tags} setTags={setTags} className="w-full" />
             </div>
 
+            <MoodSelector selectedMood={selectedMood} onMoodChange={setSelectedMood} />
+
             <div className="flex items-center space-x-2">
               <Switch id="time-capsule" checked={isTimeCapsule} onCheckedChange={setIsTimeCapsule} />
               <Label htmlFor="time-capsule">Make this a Time Capsule</Label>
@@ -533,7 +554,7 @@ export default function UploadPage() {
 
             {isTimeCapsule && (
               <div className="grid w-full gap-1.5 pl-6 border-l-2 border-primary/20">
-                <Label htmlFor="unlock-date">Unlock Date</Label>
+                <Label htmlFor="unlock-date">Unlock Date *</Label>
                 <Popover open={unlockDateOpen} onOpenChange={setUnlockDateOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -542,6 +563,7 @@ export default function UploadPage() {
                       className={cn(
                         "w-full justify-start text-left font-normal",
                         !unlockDate && "text-muted-foreground",
+                        isTimeCapsule && !unlockDate && "border-red-300"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
@@ -584,4 +606,3 @@ export default function UploadPage() {
     </div>
   )
 }
-

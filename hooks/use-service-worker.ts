@@ -96,4 +96,3 @@ export function useServiceWorker() {
 
   return { isOnline, isUpdateAvailable, updateServiceWorker, serviceWorkerSupported }
 }
-

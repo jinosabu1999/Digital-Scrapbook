@@ -186,4 +186,3 @@ export function addStickerToImage(
     sticker.src = stickerUrl
   })
 }
-

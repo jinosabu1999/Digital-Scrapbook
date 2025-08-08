@@ -3,18 +3,14 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { cn } from "@/lib/utils"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter } from 'next/font/google'
 import { MemoryProvider } from "@/context/memory-context"
 import "./globals.css"
 import { Analytics } from "@vercel/analytics/react"
+import { Suspense } from "react"
 
 // Replace the dynamic import with the import of the wrapper component
 import { OfflineStatusWrapper } from "@/components/offline-status-wrapper"
-
-// Remove this line:
-// const OfflineStatus = dynamic(() => import("@/components/offline-status").then((mod) => mod.OfflineStatus), {
-//   ssr: false,
-// })
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -34,10 +30,13 @@ export default function RootLayout({
       <body className={cn("min-h-screen bg-background antialiased", inter.className)}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <MemoryProvider>
-            {children}
+            <Suspense fallback={<div>Loading...</div>}>
+              {children}
+            </Suspense>
             <Toaster />
-            {/* And in the JSX, replace <OfflineStatus /> with <OfflineStatusWrapper /> */}
-            <OfflineStatusWrapper />
+            <Suspense fallback={null}>
+              <OfflineStatusWrapper />
+            </Suspense>
             <Analytics />
           </MemoryProvider>
         </ThemeProvider>
@@ -45,4 +44,3 @@ export default function RootLayout({
     </html>
   )
 }
-

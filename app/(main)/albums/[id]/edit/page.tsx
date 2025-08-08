@@ -246,4 +246,3 @@ export default function EditAlbumPage({ params }: { params: { id: string } }) {
     </div>
   )
 }
-

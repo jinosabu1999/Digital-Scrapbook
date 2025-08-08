@@ -107,4 +107,3 @@ export function TagInput({ tags, setTags, placeholder = "Add tag...", className 
     </div>
   )
 }
-

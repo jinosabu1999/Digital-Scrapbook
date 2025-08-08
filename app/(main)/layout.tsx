@@ -1,5 +1,6 @@
 import type React from "react"
 import { MobileNav } from "@/components/mobile-nav"
+import { QuickActions } from "@/components/quick-actions"
 
 export default function MainLayout({
   children,
@@ -12,7 +13,7 @@ export default function MainLayout({
       <main className="flex-1 overflow-auto pb-20">
         <div className="max-w-full">{children}</div>
       </main>
+      <QuickActions />
     </div>
   )
 }
-

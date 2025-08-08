@@ -107,4 +107,3 @@ async function openDB() {
     request.onerror = () => reject(request.error)
   })
 }
-

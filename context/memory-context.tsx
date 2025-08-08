@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useToast } from "@/hooks/use-toast"
+import type { MoodType } from "@/components/mood-selector"
 
 export type MemoryType = "photo" | "video" | "audio" | "text"
 
@@ -20,6 +21,7 @@ export interface Memory {
   createdAt: Date
   isLiked?: boolean
   appliedFilter?: string
+  mood?: MoodType
 }
 
 export interface Album {
@@ -39,6 +41,7 @@ interface MemoryContextType {
   deleteMemory: (id: string) => void
   getMemory: (id: string) => Memory | undefined
   toggleLike: (id: string) => void
+  toggleMemoryLike: (id: string) => void
   addAlbum: (album: Omit<Album, "id" | "createdAt">) => string
   updateAlbum: (id: string, album: Partial<Album>) => void
   deleteAlbum: (id: string) => void
@@ -146,6 +149,10 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
     setMemories((prev) => prev.map((m) => (m.id === id ? { ...m, isLiked: !m.isLiked } : m)))
   }
 
+  const toggleMemoryLike = (id: string) => {
+    setMemories((prev) => prev.map((m) => (m.id === id ? { ...m, isLiked: !m.isLiked } : m)))
+  }
+
   const applyFilter = (id: string, filter: string | null) => {
     setMemories((prev) => prev.map((m) => (m.id === id ? { ...m, appliedFilter: filter || undefined } : m)))
   }
@@ -212,6 +219,7 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
         deleteMemory,
         getMemory,
         toggleLike,
+        toggleMemoryLike,
         addAlbum,
         updateAlbum,
         deleteAlbum,
@@ -234,4 +242,3 @@ export function useMemories() {
   }
   return context
 }
-

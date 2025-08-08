@@ -88,4 +88,3 @@ export function RecentMemories({ extended = false }: RecentMemoriesProps) {
     </div>
   )
 }
-

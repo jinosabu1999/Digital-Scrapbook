@@ -4,7 +4,7 @@ import { useMemories } from "@/context/memory-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Loader2, Image, Video, Mic, FileText, SearchIcon, Camera, Book } from "lucide-react"
+import { Plus, Loader2, Image, Video, Mic, FileText, SearchIcon, Camera, Book } from 'lucide-react'
 import Link from "next/link"
 import { EmptyState } from "@/components/empty-state"
 import { RecentMemories } from "@/components/recent-memories"
@@ -12,12 +12,11 @@ import { FeaturedAlbums } from "@/components/featured-albums"
 import { TimeCapsules } from "@/components/time-capsules"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
-import { FeaturesShowcase } from "@/components/features-showcase"
 import { useEffect, useState } from "react"
 
 export default function DashboardPage() {
   const { memories, albums, loading } = useMemories()
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState("recent")
 
   // Check for tab in URL on initial load
   useEffect(() => {
@@ -25,7 +24,7 @@ export default function DashboardPage() {
     const urlParams = new URLSearchParams(window.location.search)
     const tabParam = urlParams.get("tab")
 
-    if (tabParam && ["overview", "recent", "favorites", "time-capsules", "features"].includes(tabParam)) {
+    if (tabParam && ["recent", "favorites", "time-capsules"].includes(tabParam)) {
       setActiveTab(tabParam)
     }
   }, [])
@@ -81,13 +80,11 @@ export default function DashboardPage() {
         ) : (
           <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
             <TabsList className="w-full overflow-x-auto flex flex-nowrap justify-start md:justify-center">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="recent">Recent</TabsTrigger>
               <TabsTrigger value="favorites">Favorites</TabsTrigger>
               <TabsTrigger value="time-capsules">Time Capsules</TabsTrigger>
-              <TabsTrigger value="features">Features</TabsTrigger>
             </TabsList>
-            <TabsContent value="overview" className="space-y-4">
+            <TabsContent value="recent" className="space-y-4">
               {/* Quick Actions */}
               <Card>
                 <CardHeader>
@@ -206,24 +203,6 @@ export default function DashboardPage() {
                 </CardFooter>
               </Card>
 
-              {/* Advanced Search */}
-              <Card className="col-span-full">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Advanced Search</CardTitle>
-                  <SearchIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground mb-2">
-                    Find specific memories with our powerful search tools
-                  </div>
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href="/search">
-                      <SearchIcon className="mr-2 h-4 w-4" />
-                      Search Memories
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
               <div className="grid gap-4 md:grid-cols-7">
                 <Card className="col-span-full md:col-span-4">
                   <CardHeader>
@@ -247,17 +226,6 @@ export default function DashboardPage() {
                   </CardFooter>
                 </Card>
               </div>
-            </TabsContent>
-            <TabsContent value="recent" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Memories</CardTitle>
-                  <CardDescription>Your most recently added memories</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <RecentMemories extended />
-                </CardContent>
-              </Card>
             </TabsContent>
             <TabsContent value="favorites" className="space-y-4">
               <Card>
@@ -359,13 +327,9 @@ export default function DashboardPage() {
                 </CardFooter>
               </Card>
             </TabsContent>
-            <TabsContent value="features" className="space-y-4">
-              <FeaturesShowcase />
-            </TabsContent>
           </Tabs>
         )}
       </div>
     </div>
   )
 }
-

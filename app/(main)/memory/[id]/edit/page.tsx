@@ -406,4 +406,3 @@ export default function EditMemoryPage({ params }: { params: { id: string } }) {
     </div>
   )
 }
-
