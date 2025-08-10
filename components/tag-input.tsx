@@ -1,32 +1,32 @@
 "use client"
 
-import { useState, KeyboardEvent } from "react"
+import { useState, type KeyboardEvent } from "react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { X, Plus } from 'lucide-react'
+import { X, Plus } from "lucide-react"
 import { Label } from "@/components/ui/label"
 
 interface TagInputProps {
   tags: string[]
-  onTagsChange: (tags: string[]) => void
+  setTags: (tags: string[]) => void // Changed from onTagsChange to setTags
   placeholder?: string
   className?: string
 }
 
-export function TagInput({ tags, onTagsChange, placeholder = "Add tags...", className }: TagInputProps) {
+export function TagInput({ tags, setTags, placeholder = "Add tags...", className }: TagInputProps) {
   const [inputValue, setInputValue] = useState("")
 
   const addTag = (tag: string) => {
     const trimmedTag = tag.trim()
     if (trimmedTag && !tags.includes(trimmedTag)) {
-      onTagsChange([...tags, trimmedTag])
+      setTags([...tags, trimmedTag]) // Changed from onTagsChange to setTags
     }
     setInputValue("")
   }
 
   const removeTag = (tagToRemove: string) => {
-    onTagsChange(tags.filter(tag => tag !== tagToRemove))
+    setTags(tags.filter((tag) => tag !== tagToRemove)) // Changed from onTagsChange to setTags
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -79,9 +79,7 @@ export function TagInput({ tags, onTagsChange, placeholder = "Add tags...", clas
             )}
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Press Enter or comma to add tags. Click × to remove.
-        </p>
+        <p className="text-xs text-muted-foreground">Press Enter or comma to add tags. Click × to remove.</p>
       </div>
     </div>
   )

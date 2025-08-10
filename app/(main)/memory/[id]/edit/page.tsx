@@ -343,7 +343,7 @@ export default function EditMemoryPage({ params }: { params: { id: string } }) {
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
               />
-              <Button variant="outline" className="rounded-l-none border-l-0">
+              <Button variant="outline" className="rounded-l-none border-l-0 bg-transparent">
                 <MapPin className="h-4 w-4" />
               </Button>
             </div>
@@ -388,7 +388,7 @@ export default function EditMemoryPage({ params }: { params: { id: string } }) {
           )}
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => router.push(`/memory/${params.id}`)} disabled={isSaving}>
+          <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>

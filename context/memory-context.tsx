@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useToast } from "@/hooks/use-toast"
-import type { Memory, Tag, MemoryType, MoodType } from "@/types"
+import type { Memory, Tag } from "@/types"
 
 interface MemoryContextType {
   memories: Memory[]
@@ -12,6 +12,7 @@ interface MemoryContextType {
   deleteMemory: (id: string) => void
   getMemory: (id: string) => Memory | undefined
   toggleLike: (id: string) => void
+  toggleMemoryLike: (id: string) => void
   getFavoriteMemories: () => Memory[]
   searchMemories: (query: string) => Memory[]
   getMemoriesByTag: (tagName: string) => Memory[]
@@ -21,7 +22,7 @@ interface MemoryContextType {
 
 const MemoryContext = createContext<MemoryContextType | undefined>(undefined)
 
-export function MemoryProvider({ children }: { ReactNode }) {
+export function MemoryProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast()
   const [memories, setMemories] = useState<Memory[]>([])
   const [tags, setTags] = useState<Tag[]>([])
@@ -36,7 +37,6 @@ export function MemoryProvider({ children }: { ReactNode }) {
 
         if (savedMemories) {
           const parsedMemories = JSON.parse(savedMemories)
-          // Convert string dates back to Date objects
           setMemories(
             parsedMemories.map((memory: any) => ({
               ...memory,
@@ -44,6 +44,7 @@ export function MemoryProvider({ children }: { ReactNode }) {
               unlockDate: memory.unlockDate ? new Date(memory.unlockDate) : undefined,
               createdAt: new Date(memory.createdAt),
               updatedAt: new Date(memory.updatedAt),
+              tags: memory.tags || [],
             })),
           )
         }
@@ -81,29 +82,25 @@ export function MemoryProvider({ children }: { ReactNode }) {
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
-      isLiked: false, // Default to not liked
-      tags: memory.tags || [], // Ensure tags is always an array
+      isLiked: false,
+      tags: memory.tags || [],
     }
 
     setMemories((prev) => [newMemory, ...prev])
 
     // Update tags
     if (memory.tags && memory.tags.length > 0) {
-      const newTags = memory.tags.filter(tagName => 
-        !tags.some(tag => tag.name === tagName)
-      ).map(tagName => ({
-        id: Date.now().toString() + Math.random(),
-        name: tagName,
-        count: 1
-      }))
-      
-      setTags(prev => [
-        ...prev.map(tag => 
-          memory.tags?.includes(tag.name) 
-            ? { ...tag, count: tag.count + 1 }
-            : tag
-        ),
-        ...newTags
+      const newTags = memory.tags
+        .filter((tagName) => !tags.some((tag) => tag.name === tagName))
+        .map((tagName) => ({
+          id: Date.now().toString() + Math.random(),
+          name: tagName,
+          count: 1,
+        }))
+
+      setTags((prev) => [
+        ...prev.map((tag) => (memory.tags?.includes(tag.name) ? { ...tag, count: tag.count + 1 } : tag)),
+        ...newTags,
       ])
     }
 
@@ -136,27 +133,30 @@ export function MemoryProvider({ children }: { ReactNode }) {
     setMemories((prev) => prev.map((m) => (m.id === id ? { ...m, isLiked: !m.isLiked, updatedAt: new Date() } : m)))
   }
 
+  const toggleMemoryLike = (id: string) => {
+    setMemories((prev) => prev.map((m) => (m.id === id ? { ...m, isLiked: !m.isLiked, updatedAt: new Date() } : m)))
+  }
+
   const getFavoriteMemories = () => {
-    return memories.filter(memory => memory.isLiked)
+    return memories.filter((memory) => memory.isLiked)
   }
 
   const searchMemories = (query: string) => {
     const lowercaseQuery = query.toLowerCase()
-    return memories.filter(memory => 
-      memory.title?.toLowerCase().includes(lowercaseQuery) ||
-      memory.description?.toLowerCase().includes(lowercaseQuery) ||
-      memory.tags?.some(tag => tag.toLowerCase().includes(lowercaseQuery))
+    return memories.filter(
+      (memory) =>
+        memory.title?.toLowerCase().includes(lowercaseQuery) ||
+        memory.description?.toLowerCase().includes(lowercaseQuery) ||
+        memory.tags?.some((tag) => tag.toLowerCase().includes(lowercaseQuery)),
     )
   }
 
   const getMemoriesByTag = (tagName: string) => {
-    return memories.filter(memory => 
-      memory.tags?.includes(tagName)
-    )
+    return memories.filter((memory) => memory.tags?.includes(tagName))
   }
 
   const getMemoriesByDateRange = (startDate: Date, endDate: Date) => {
-    return memories.filter(memory => {
+    return memories.filter((memory) => {
       const memoryDate = new Date(memory.date)
       return memoryDate >= startDate && memoryDate <= endDate
     })
@@ -172,6 +172,7 @@ export function MemoryProvider({ children }: { ReactNode }) {
         deleteMemory,
         getMemory,
         toggleLike,
+        toggleMemoryLike,
         getFavoriteMemories,
         searchMemories,
         getMemoriesByTag,
@@ -192,5 +193,4 @@ export function useMemories() {
   return context
 }
 
-// Also export as useMemory for backward compatibility
 export const useMemory = useMemories
