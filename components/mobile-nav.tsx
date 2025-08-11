@@ -1,72 +1,53 @@
-import React from "react"
-import { Search, FileText, Download, FolderOpen, Bell } from "lucide-react"
-import { Home, Info, Mail } from "lucide-react"
+"use client"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Home, Camera, Clock, Heart } from "lucide-react"
 
-// Added named export for MobileNav to match import in layout
 export const MobileNav = () => {
+  const pathname = usePathname()
+
   const navigation = [
     {
       name: "Home",
       href: "/",
       icon: Home,
-      color: "text-red-500",
     },
     {
-      name: "About",
-      href: "/about",
-      icon: Info,
-      color: "text-yellow-500",
+      name: "Memories",
+      href: "/memories",
+      icon: Camera,
     },
     {
-      name: "Contact",
-      href: "/contact",
-      icon: Mail,
-      color: "text-pink-500",
+      name: "Timeline",
+      href: "/timeline",
+      icon: Clock,
     },
     {
-      name: "Advanced Search",
-      href: "/advanced-search",
-      icon: Search,
-      color: "text-blue-500",
-    },
-    {
-      name: "Templates",
-      href: "/templates",
-      icon: FileText,
-      color: "text-green-500",
-    },
-    {
-      name: "Backup",
-      href: "/backup",
-      icon: Download,
-      color: "text-purple-500",
-    },
-    {
-      name: "Smart Folders",
-      href: "/smart-folders",
-      icon: FolderOpen,
-      color: "text-orange-500",
-    },
-    {
-      name: "Reminders",
-      href: "/reminders",
-      icon: Bell,
-      color: "text-pink-500",
+      name: "Favorites",
+      href: "/favorites",
+      icon: Heart,
     },
   ]
 
   return (
-    <nav>
-      {navigation.map((item) => (
-        <a
-          key={item.name}
-          href={item.href}
-          className={`flex items-center p-2 rounded-lg hover:bg-gray-100 ${item.color}`}
-        >
-          {React.createElement(item.icon, { className: "w-6 h-6 mr-2" })}
-          {item.name}
-        </a>
-      ))}
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+      <div className="flex items-center justify-around px-2 py-1">
+        {navigation.map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`flex flex-col items-center justify-center p-2 min-w-0 flex-1 ${
+                isActive ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <item.icon className="w-5 h-5 mb-1" />
+              <span className="text-xs font-medium truncate">{item.name}</span>
+            </Link>
+          )
+        })}
+      </div>
     </nav>
   )
 }

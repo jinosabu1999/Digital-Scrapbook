@@ -1,5 +1,7 @@
 export async function downloadFile(url: string, filename: string): Promise<boolean> {
   try {
+    if (typeof window === "undefined") return false
+
     const response = await fetch(url)
 
     if (!response.ok) {
@@ -34,6 +36,10 @@ export async function downloadFile(url: string, filename: string): Promise<boole
 }
 
 export function applyImageFilter(imageElement: HTMLImageElement, filter: string): string {
+  if (typeof document === "undefined") {
+    throw new Error("Document not available in SSR context")
+  }
+
   // Create a canvas to apply the filter
   const canvas = document.createElement("canvas")
   const ctx = canvas.getContext("2d")
@@ -85,6 +91,10 @@ export function cropImage(
   width?: number,
   height?: number,
 ): string {
+  if (typeof document === "undefined") {
+    throw new Error("Document not available in SSR context")
+  }
+
   // Create a canvas to crop the image
   const canvas = document.createElement("canvas")
   const ctx = canvas.getContext("2d")
@@ -154,6 +164,11 @@ export function addStickerToImage(
   height: number,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (typeof document === "undefined") {
+      reject(new Error("Document not available in SSR context"))
+      return
+    }
+
     // Create a canvas
     const canvas = document.createElement("canvas")
     const ctx = canvas.getContext("2d")

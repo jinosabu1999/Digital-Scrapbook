@@ -34,6 +34,11 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadData = () => {
       try {
+        if (typeof window === "undefined") {
+          setLoading(false)
+          return
+        }
+
         const savedMemories = localStorage.getItem("memories")
         const savedTags = localStorage.getItem("tags")
 
@@ -71,7 +76,7 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
 
   // Save data to localStorage whenever it changes
   useEffect(() => {
-    if (!loading) {
+    if (!loading && typeof window !== "undefined") {
       localStorage.setItem("memories", JSON.stringify(memories))
       localStorage.setItem("tags", JSON.stringify(tags))
     }
