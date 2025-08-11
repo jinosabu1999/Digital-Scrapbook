@@ -2,8 +2,15 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Keyboard, Plus, Search, Heart, BarChart3, Home, Image } from 'lucide-react'
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Keyboard, Plus, Search, Heart, Home, ImageIcon, FileText, Download, FolderOpen, Bell } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemories } from "@/context/memory-context"
 
@@ -51,16 +58,32 @@ export function QuickActions() {
               <span>Home</span>
             </CommandItem>
             <CommandItem onSelect={() => handleCommand("/memories")}>
-              <Image className="mr-2 h-4 w-4" />
+              <ImageIcon className="mr-2 h-4 w-4" />
               <span>All Memories</span>
             </CommandItem>
             <CommandItem onSelect={() => handleCommand("/favorites")}>
               <Heart className="mr-2 h-4 w-4" />
               <span>Favorites</span>
             </CommandItem>
-            <CommandItem onSelect={() => handleCommand("/stats")}>
-              <BarChart3 className="mr-2 h-4 w-4" />
-              <span>Statistics</span>
+            <CommandItem onSelect={() => handleCommand("/advanced-search")}>
+              <Search className="mr-2 h-4 w-4" />
+              <span>Advanced Search</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleCommand("/templates")}>
+              <FileText className="mr-2 h-4 w-4" />
+              <span>Memory Templates</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleCommand("/backup")}>
+              <Download className="mr-2 h-4 w-4" />
+              <span>Backup & Export</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleCommand("/smart-folders")}>
+              <FolderOpen className="mr-2 h-4 w-4" />
+              <span>Smart Folders</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleCommand("/reminders")}>
+              <Bell className="mr-2 h-4 w-4" />
+              <span>Memory Reminders</span>
             </CommandItem>
           </CommandGroup>
           <CommandGroup heading="Actions">

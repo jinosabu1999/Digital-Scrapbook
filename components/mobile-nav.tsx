@@ -1,46 +1,74 @@
-"use client"
+import React from "react"
+import { Search, FileText, Download, FolderOpen, Bell } from "lucide-react"
+import { Home, Info, Mail } from "lucide-react"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Home, BookOpen, Plus, Heart, TimerIcon as Timeline } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-const navItems = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/memories", icon: BookOpen, label: "Memories" },
-  { href: "/upload", icon: Plus, label: "Add", special: true },
-  { href: "/favorites", icon: Heart, label: "Favorites" },
-  { href: "/timeline", icon: Timeline, label: "Timeline" },
-]
-
-export function MobileNav() {
-  const pathname = usePathname()
+// Added named export for MobileNav to match import in layout
+export const MobileNav = () => {
+  const navigation = [
+    {
+      name: "Home",
+      href: "/",
+      icon: Home,
+      color: "text-red-500",
+    },
+    {
+      name: "About",
+      href: "/about",
+      icon: Info,
+      color: "text-yellow-500",
+    },
+    {
+      name: "Contact",
+      href: "/contact",
+      icon: Mail,
+      color: "text-pink-500",
+    },
+    {
+      name: "Advanced Search",
+      href: "/advanced-search",
+      icon: Search,
+      color: "text-blue-500",
+    },
+    {
+      name: "Templates",
+      href: "/templates",
+      icon: FileText,
+      color: "text-green-500",
+    },
+    {
+      name: "Backup",
+      href: "/backup",
+      icon: Download,
+      color: "text-purple-500",
+    },
+    {
+      name: "Smart Folders",
+      href: "/smart-folders",
+      icon: FolderOpen,
+      color: "text-orange-500",
+    },
+    {
+      name: "Reminders",
+      href: "/reminders",
+      icon: Bell,
+      color: "text-pink-500",
+    },
+  ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50">
-      <div className="flex items-center justify-around py-2">
-        {navItems.map((item) => {
-          const Icon = item.icon
-          const isActive = pathname === item.href
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center justify-center p-2 rounded-lg transition-colors min-w-[60px]",
-                isActive ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                item.special && "bg-primary text-primary-foreground hover:bg-primary/90",
-              )}
-            >
-              <Icon className={cn("h-5 w-5", item.special && "text-primary-foreground")} />
-              <span className={cn("text-xs mt-1 font-medium", item.special && "text-primary-foreground")}>
-                {item.label}
-              </span>
-            </Link>
-          )
-        })}
-      </div>
+    <nav>
+      {navigation.map((item) => (
+        <a
+          key={item.name}
+          href={item.href}
+          className={`flex items-center p-2 rounded-lg hover:bg-gray-100 ${item.color}`}
+        >
+          {React.createElement(item.icon, { className: "w-6 h-6 mr-2" })}
+          {item.name}
+        </a>
+      ))}
     </nav>
   )
 }
+
+export default MobileNav

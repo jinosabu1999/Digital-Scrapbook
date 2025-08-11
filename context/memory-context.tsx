@@ -4,6 +4,8 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { useToast } from "@/hooks/use-toast"
 import type { Memory, Tag } from "@/types"
 
+export type MemoryType = "photo" | "video" | "audio" | "text"
+
 interface MemoryContextType {
   memories: Memory[]
   tags: Tag[]
