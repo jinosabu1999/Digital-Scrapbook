@@ -12,9 +12,9 @@ export function OfflineStatus() {
   const { toast } = useToast()
 
   useEffect(() => {
-    // Check if user has set a preference for notifications
+    if (typeof window === "undefined" || typeof navigator === "undefined") return
+
     const notificationPreference = localStorage.getItem("showOfflineNotifications")
-    // Default to not showing notifications unless explicitly enabled
     setShowNotification(notificationPreference === "true")
 
     const handleOnline = () => {
@@ -35,7 +35,6 @@ export function OfflineStatus() {
     window.addEventListener("online", handleOnline)
     window.addEventListener("offline", handleOffline)
 
-    // Set initial state
     setIsOnline(navigator.onLine)
 
     return () => {
@@ -45,6 +44,8 @@ export function OfflineStatus() {
   }, [toast])
 
   const toggleNotifications = () => {
+    if (typeof window === "undefined") return
+
     const newValue = !showNotification
     setShowNotification(newValue)
     localStorage.setItem("showOfflineNotifications", newValue.toString())

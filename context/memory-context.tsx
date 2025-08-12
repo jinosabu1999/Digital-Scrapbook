@@ -28,8 +28,12 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
   const [tags, setTags] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Load data from localStorage on mount
   useEffect(() => {
+    if (typeof window === "undefined") {
+      setLoading(false)
+      return
+    }
+
     const loadData = () => {
       try {
         const savedMemories = localStorage.getItem("memories")
@@ -67,9 +71,8 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
     loadData()
   }, [toast])
 
-  // Save data to localStorage whenever it changes
   useEffect(() => {
-    if (!loading) {
+    if (!loading && typeof window !== "undefined") {
       localStorage.setItem("memories", JSON.stringify(memories))
       localStorage.setItem("tags", JSON.stringify(tags))
     }
@@ -82,13 +85,12 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
-      isLiked: false, // Default to not liked
-      tags: memory.tags || [], // Ensure tags is always an array
+      isLiked: false,
+      tags: memory.tags || [],
     }
 
     setMemories((prev) => [newMemory, ...prev])
 
-    // Update tags
     if (memory.tags && memory.tags.length > 0) {
       const newTags = memory.tags
         .filter((tagName) => !tags.some((tag) => tag.name === tagName))
@@ -133,7 +135,6 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
     setMemories((prev) => prev.map((m) => (m.id === id ? { ...m, isLiked: !m.isLiked, updatedAt: new Date() } : m)))
   }
 
-  // Added toggleMemoryLike alias to fix favorite button error
   const toggleMemoryLike = toggleLike
 
   const getFavoriteMemories = () => {
@@ -192,8 +193,6 @@ export function useMemories() {
   return context
 }
 
-// Also export as useMemory for backward compatibility
 export const useMemory = useMemories
 
-// Export MemoryType and MoodType for convenience
 export type { MemoryType, MoodType } from "@/types"

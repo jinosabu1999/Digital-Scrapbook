@@ -1,9 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Keyboard, Plus, Search, Heart, BarChart3, Home, Image } from 'lucide-react'
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Keyboard, Plus, Search, Heart, BarChart3, Home, ImageIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useMemories } from "@/context/memory-context"
 
@@ -17,8 +24,9 @@ export function QuickActions() {
     router.push(command)
   }
 
-  // Keyboard shortcut
-  useState(() => {
+  useEffect(() => {
+    if (typeof document === "undefined") return
+
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
@@ -27,7 +35,7 @@ export function QuickActions() {
     }
     document.addEventListener("keydown", down)
     return () => document.removeEventListener("keydown", down)
-  })
+  }, [])
 
   return (
     <>
@@ -51,7 +59,7 @@ export function QuickActions() {
               <span>Home</span>
             </CommandItem>
             <CommandItem onSelect={() => handleCommand("/memories")}>
-              <Image className="mr-2 h-4 w-4" />
+              <ImageIcon className="mr-2 h-4 w-4" />
               <span>All Memories</span>
             </CommandItem>
             <CommandItem onSelect={() => handleCommand("/favorites")}>
