@@ -9,8 +9,6 @@ export function useServiceWorker() {
   const [serviceWorkerSupported, setServiceWorkerSupported] = useState(false)
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-
     try {
       // Initial online status
       setIsOnline(navigator.onLine)

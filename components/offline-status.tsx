@@ -12,8 +12,6 @@ export function OfflineStatus() {
   const { toast } = useToast()
 
   useEffect(() => {
-    if (typeof window === "undefined") return
-
     // Check if user has set a preference for notifications
     const notificationPreference = localStorage.getItem("showOfflineNotifications")
     // Default to not showing notifications unless explicitly enabled
@@ -47,8 +45,6 @@ export function OfflineStatus() {
   }, [toast])
 
   const toggleNotifications = () => {
-    if (typeof window === "undefined") return
-
     const newValue = !showNotification
     setShowNotification(newValue)
     localStorage.setItem("showOfflineNotifications", newValue.toString())

@@ -4,8 +4,6 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from "
 import { useToast } from "@/hooks/use-toast"
 import type { Memory, Tag } from "@/types"
 
-export type MemoryType = "photo" | "video" | "audio" | "text"
-
 interface MemoryContextType {
   memories: Memory[]
   tags: Tag[]
@@ -34,16 +32,12 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadData = () => {
       try {
-        if (typeof window === "undefined") {
-          setLoading(false)
-          return
-        }
-
         const savedMemories = localStorage.getItem("memories")
         const savedTags = localStorage.getItem("tags")
 
         if (savedMemories) {
           const parsedMemories = JSON.parse(savedMemories)
+          // Convert string dates back to Date objects
           setMemories(
             parsedMemories.map((memory: any) => ({
               ...memory,
@@ -51,7 +45,6 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
               unlockDate: memory.unlockDate ? new Date(memory.unlockDate) : undefined,
               createdAt: new Date(memory.createdAt),
               updatedAt: new Date(memory.updatedAt),
-              tags: memory.tags || [],
             })),
           )
         }
@@ -76,7 +69,7 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
 
   // Save data to localStorage whenever it changes
   useEffect(() => {
-    if (!loading && typeof window !== "undefined") {
+    if (!loading) {
       localStorage.setItem("memories", JSON.stringify(memories))
       localStorage.setItem("tags", JSON.stringify(tags))
     }
@@ -89,8 +82,8 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
-      isLiked: false,
-      tags: memory.tags || [],
+      isLiked: false, // Default to not liked
+      tags: memory.tags || [], // Ensure tags is always an array
     }
 
     setMemories((prev) => [newMemory, ...prev])
@@ -140,9 +133,8 @@ export function MemoryProvider({ children }: { children: ReactNode }) {
     setMemories((prev) => prev.map((m) => (m.id === id ? { ...m, isLiked: !m.isLiked, updatedAt: new Date() } : m)))
   }
 
-  const toggleMemoryLike = (id: string) => {
-    setMemories((prev) => prev.map((m) => (m.id === id ? { ...m, isLiked: !m.isLiked, updatedAt: new Date() } : m)))
-  }
+  // Added toggleMemoryLike alias to fix favorite button error
+  const toggleMemoryLike = toggleLike
 
   const getFavoriteMemories = () => {
     return memories.filter((memory) => memory.isLiked)
@@ -200,4 +192,8 @@ export function useMemories() {
   return context
 }
 
+// Also export as useMemory for backward compatibility
 export const useMemory = useMemories
+
+// Export MemoryType and MoodType for convenience
+export type { MemoryType, MoodType } from "@/types"

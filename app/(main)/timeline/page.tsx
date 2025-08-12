@@ -1,70 +1,114 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useMemories } from "@/context/memory-context"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, MapPin, Clock, TrendingUp, Tag, Heart, ImageIcon, Video, Music, FileText } from "lucide-react"
-import { FavoriteButton } from "@/components/favorite-button"
+import { EmptyState } from "@/components/empty-state"
 import { MoodBadge } from "@/components/mood-selector"
+import { Calendar, Clock, Image, Video, FileText, Mic, Heart, Tag, TrendingUp, BarChart3, PieChart, Activity } from 'lucide-react'
 import Link from "next/link"
-import { format, isToday, isYesterday, isThisWeek, isThisMonth, isThisYear } from "date-fns"
-
-type FilterType = "all" | "today" | "week" | "month" | "year"
-type SortType = "newest" | "oldest"
+import { format, isToday, isThisWeek, isThisMonth, isThisYear, startOfDay, differenceInDays } from "date-fns"
+import type { Memory } from "@/types"
 
 export default function TimelinePage() {
-  const { memories, tags, loading } = useMemories()
-  const [filter, setFilter] = useState<FilterType>("all")
-  const [sort, setSort] = useState<SortType>("newest")
+  const { memories = [], toggleFavorite } = useMemories()
+  const [timeFilter, setTimeFilter] = useState<string>("all")
+  const [sortOrder, setSortOrder] = useState<string>("newest")
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading timeline...</p>
-        </div>
-      </div>
-    )
-  }
+  // Safe array operations with null checks
+  const safeMemories = Array.isArray(memories) ? memories : []
 
-  const filteredMemories =
-    memories
-      ?.filter((memory) => {
-        if (!memory) return false
+  const filteredMemories = useMemo(() => {
+    return safeMemories.filter((memory: Memory) => {
+      if (!memory?.createdAt) return false
+      
+      const memoryDate = new Date(memory.createdAt)
+      
+      switch (timeFilter) {
+        case "today":
+          return isToday(memoryDate)
+        case "week":
+          return isThisWeek(memoryDate)
+        case "month":
+          return isThisMonth(memoryDate)
+        case "year":
+          return isThisYear(memoryDate)
+        default:
+          return true
+      }
+    })
+  }, [safeMemories, timeFilter])
 
-        const memoryDate = new Date(memory.date)
+  const sortedMemories = useMemo(() => {
+    return [...filteredMemories].sort((a: Memory, b: Memory) => {
+      if (!a.createdAt || !b.createdAt) return 0
+      
+      const dateA = new Date(a.createdAt).getTime()
+      const dateB = new Date(b.createdAt).getTime()
+      
+      return sortOrder === "newest" ? dateB - dateA : dateA - dateB
+    })
+  }, [filteredMemories, sortOrder])
 
-        switch (filter) {
-          case "today":
-            return isToday(memoryDate)
-          case "week":
-            return isThisWeek(memoryDate)
-          case "month":
-            return isThisMonth(memoryDate)
-          case "year":
-            return isThisYear(memoryDate)
-          default:
-            return true
-        }
+  // Group memories by date
+  const groupedMemories = useMemo(() => {
+    const groups: { [key: string]: Memory[] } = {}
+    
+    sortedMemories.forEach((memory: Memory) => {
+      if (!memory.createdAt) return
+      
+      const dateKey = format(new Date(memory.createdAt), "yyyy-MM-dd")
+      if (!groups[dateKey]) {
+        groups[dateKey] = []
+      }
+      groups[dateKey].push(memory)
+    })
+    
+    return groups
+  }, [sortedMemories])
+
+  // Analytics data
+  const analytics = useMemo(() => {
+    const total = safeMemories.length
+    const favorites = safeMemories.filter(m => m.isFavorite).length
+    const thisWeek = safeMemories.filter(m => m.createdAt && isThisWeek(new Date(m.createdAt))).length
+    
+    const typeBreakdown = safeMemories.reduce((acc, memory) => {
+      acc[memory.type] = (acc[memory.type] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+
+    const tagCounts = safeMemories.reduce((acc, memory) => {
+      memory.tags?.forEach(tag => {
+        acc[tag] = (acc[tag] || 0) + 1
       })
-      .sort((a, b) => {
-        const dateA = new Date(a.date).getTime()
-        const dateB = new Date(b.date).getTime()
-        return sort === "newest" ? dateB - dateA : dateA - dateB
-      }) || []
+      return acc
+    }, {} as Record<string, number>)
+
+    const topTags = Object.entries(tagCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+
+    return {
+      total,
+      favorites,
+      thisWeek,
+      typeBreakdown,
+      topTags
+    }
+  }, [safeMemories])
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "photo":
-        return <ImageIcon className="h-4 w-4" />
+        return <Image className="h-4 w-4" />
       case "video":
         return <Video className="h-4 w-4" />
       case "audio":
-        return <Music className="h-4 w-4" />
+        return <Mic className="h-4 w-4" />
       case "text":
         return <FileText className="h-4 w-4" />
       default:
@@ -72,289 +116,274 @@ export default function TimelinePage() {
     }
   }
 
-  const getRelativeDate = (date: Date) => {
-    if (isToday(date)) return "Today"
-    if (isYesterday(date)) return "Yesterday"
-    if (isThisWeek(date)) return format(date, "EEEE")
-    if (isThisMonth(date)) return format(date, "MMM d")
-    if (isThisYear(date)) return format(date, "MMM d")
-    return format(date, "MMM d, yyyy")
+  const getRelativeTimeLabel = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    const daysDiff = differenceInDays(startOfDay(today), startOfDay(date))
+    
+    if (daysDiff === 0) return "Today"
+    if (daysDiff === 1) return "Yesterday"
+    if (daysDiff < 7) return `${daysDiff} days ago`
+    
+    return format(date, "MMMM d, yyyy")
   }
 
-  const stats = {
-    total: memories?.length || 0,
-    favorites: memories?.filter((m) => m.isLiked).length || 0,
-    thisWeek: memories?.filter((m) => isThisWeek(new Date(m.date))).length || 0,
-    types: {
-      photo: memories?.filter((m) => m.type === "photo").length || 0,
-      video: memories?.filter((m) => m.type === "video").length || 0,
-      audio: memories?.filter((m) => m.type === "audio").length || 0,
-      text: memories?.filter((m) => m.type === "text").length || 0,
-    },
+  if (safeMemories.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold">Timeline</h1>
+          <Link href="/upload">
+            <Button>Add Memory</Button>
+          </Link>
+        </div>
+        <EmptyState
+          title="No memories in your timeline"
+          description="Start capturing your journey by adding your first memory."
+          actionLabel="Add Memory"
+          actionHref="/upload"
+        />
+      </div>
+    )
   }
-
-  const popularTags = tags?.slice(0, 5) || []
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <div className="flex flex-col space-y-4">
-        <h1 className="text-3xl font-bold">Timeline & Analytics</h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">Timeline</h1>
+        <Link href="/upload">
+          <Button>Add Memory</Button>
+        </Link>
+      </div>
 
-        {/* Analytics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                </div>
+      {/* Analytics Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-blue-500" />
+              <div>
+                <p className="text-2xl font-bold">{analytics.total}</p>
+                <p className="text-xs text-muted-foreground">Total Memories</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <div className="p-2 bg-red-100 dark:bg-red-900 rounded-lg">
-                  <Heart className="h-4 w-4 text-red-600 dark:text-red-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Favorites</p>
-                  <p className="text-2xl font-bold">{stats.favorites}</p>
-                </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-red-500" />
+              <div>
+                <p className="text-2xl font-bold">{analytics.favorites}</p>
+                <p className="text-xs text-muted-foreground">Favorites</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                  <Calendar className="h-4 w-4 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">This Week</p>
-                  <p className="text-2xl font-bold">{stats.thisWeek}</p>
-                </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="text-2xl font-bold">{analytics.thisWeek}</p>
+                <p className="text-xs text-muted-foreground">This Week</p>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                  <ImageIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Photos</p>
-                  <p className="text-2xl font-bold">{stats.types.photo}</p>
-                </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <PieChart className="h-5 w-5 text-purple-500" />
+              <div>
+                <p className="text-2xl font-bold">{Object.keys(analytics.typeBreakdown).length}</p>
+                <p className="text-xs text-muted-foreground">Content Types</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Insights */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Content Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4" />
-                    <span className="text-sm">Photos</span>
-                  </div>
-                  <Badge variant="outline">{stats.types.photo}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Video className="h-4 w-4" />
-                    <span className="text-sm">Videos</span>
-                  </div>
-                  <Badge variant="outline">{stats.types.video}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Music className="h-4 w-4" />
-                    <span className="text-sm">Audio</span>
-                  </div>
-                  <Badge variant="outline">{stats.types.audio}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    <span className="text-sm">Text</span>
-                  </div>
-                  <Badge variant="outline">{stats.types.text}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Popular Tags */}
+      {analytics.topTags.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Popular Tags
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {analytics.topTags.map(([tag, count]) => (
+                <Badge key={tag} variant="secondary" className="gap-1">
+                  <Tag className="h-3 w-3" />
+                  {tag} ({count})
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Popular Tags</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {popularTags.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No tags yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {popularTags.map((tag) => (
-                    <div key={tag.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Tag className="h-4 w-4" />
-                        <span className="text-sm">{tag.name}</span>
-                      </div>
-                      <Badge variant="outline">{tag.count}</Badge>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+      {/* Filter Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <Select value={timeFilter} onValueChange={setTimeFilter}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <Calendar className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter by time" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Time</SelectItem>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="week">This Week</SelectItem>
+            <SelectItem value="month">This Month</SelectItem>
+            <SelectItem value="year">This Year</SelectItem>
+          </SelectContent>
+        </Select>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Select value={filter} onValueChange={(value: FilterType) => setFilter(value)}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Time</SelectItem>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="year">This Year</SelectItem>
-            </SelectContent>
-          </Select>
+        <Select value={sortOrder} onValueChange={setSortOrder}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <Clock className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Sort order" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Newest First</SelectItem>
+            <SelectItem value="oldest">Oldest First</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-          <Select value={sort} onValueChange={(value: SortType) => setSort(value)}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest First</SelectItem>
-              <SelectItem value="oldest">Oldest First</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Results Count */}
+      <div className="mb-6">
+        <p className="text-sm text-muted-foreground">
+          Showing {sortedMemories.length} memories
+        </p>
       </div>
 
       {/* Timeline */}
-      {filteredMemories.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">📅</div>
-          <h3 className="text-xl font-semibold mb-2">No memories found</h3>
-          <p className="text-muted-foreground mb-4">Try adjusting your filter criteria or add some memories!</p>
-          <Link href="/upload">
-            <Button>Add Your First Memory</Button>
-          </Link>
-        </div>
+      {Object.keys(groupedMemories).length === 0 ? (
+        <EmptyState
+          title="No memories found"
+          description="Try adjusting your time filter to see more memories."
+          actionLabel="Show All"
+          onAction={() => setTimeFilter("all")}
+        />
       ) : (
-        <div className="relative">
-          {/* Timeline Line */}
-          <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-border"></div>
-
-          <div className="space-y-8">
-            {filteredMemories.map((memory, index) => (
-              <div key={memory.id} className="relative flex items-start space-x-4">
-                {/* Timeline Dot */}
-                <div className="relative z-10 flex items-center justify-center w-4 h-4 bg-primary rounded-full border-2 border-background">
-                  <div className="w-2 h-2 bg-background rounded-full"></div>
+        <div className="space-y-8">
+          {Object.entries(groupedMemories).map(([dateKey, dayMemories]) => (
+            <div key={dateKey} className="relative">
+              {/* Date Header */}
+              <div className="sticky top-4 z-10 mb-4">
+                <div className="inline-flex items-center gap-2 bg-background px-3 py-1 rounded-full border shadow-sm">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span className="font-medium">
+                    {getRelativeTimeLabel(dateKey)}
+                  </span>
+                  <Badge variant="secondary" className="text-xs">
+                    {dayMemories.length} {dayMemories.length === 1 ? 'memory' : 'memories'}
+                  </Badge>
                 </div>
-
-                {/* Memory Card */}
-                <Card className="flex-1 group hover:shadow-lg transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          {getTypeIcon(memory.type)}
-                          <h3 className="font-semibold text-lg">{memory.title || "Untitled Memory"}</h3>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>{getRelativeDate(new Date(memory.date))}</span>
-                          {memory.location && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {memory.location}
-                            </div>
-                          )}
-                          {memory.isTimeCapsule && (
-                            <div className="flex items-center gap-1 text-amber-600">
-                              <Clock className="h-3 w-3" />
-                              Time Capsule
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <FavoriteButton memoryId={memory.id} isLiked={memory.isLiked} />
-                    </div>
-
-                    {memory.mediaUrl && (
-                      <div className="mb-3 rounded-lg overflow-hidden">
-                        {memory.type === "photo" && (
-                          <img
-                            src={memory.mediaUrl || "/placeholder.svg"}
-                            alt={memory.title || "Memory"}
-                            className="w-full h-48 object-cover"
-                          />
-                        )}
-                        {memory.type === "video" && (
-                          <video src={memory.mediaUrl} className="w-full h-48 object-cover" controls />
-                        )}
-                        {memory.type === "audio" && (
-                          <div className="bg-muted p-4 rounded-lg">
-                            <audio src={memory.mediaUrl} controls className="w-full" />
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {memory.description && (
-                      <p className="text-muted-foreground text-sm mb-3 line-clamp-3">{memory.description}</p>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {memory.mood && <MoodBadge mood={memory.mood} />}
-                        {memory.tags && memory.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {memory.tags.slice(0, 2).map((tag) => (
-                              <Badge key={tag} variant="outline" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                            {memory.tags.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{memory.tags.length - 2}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <Link href={`/memory/${memory.id}`}>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
-            ))}
-          </div>
+
+              {/* Timeline Line */}
+              <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-border" />
+
+              {/* Memories for this date */}
+              <div className="space-y-6">
+                {dayMemories.map((memory: Memory, index: number) => (
+                  <div key={memory.id} className="relative flex gap-4">
+                    {/* Timeline Dot */}
+                    <div className="flex-shrink-0 w-12 flex justify-center">
+                      <div className="w-3 h-3 bg-primary rounded-full border-2 border-background shadow-sm" />
+                    </div>
+
+                    {/* Memory Card */}
+                    <Card className="flex-1 group hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            {getTypeIcon(memory.type)}
+                            <CardTitle className="text-lg line-clamp-1">
+                              {memory.title || "Untitled Memory"}
+                            </CardTitle>
+                          </div>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleFavorite(memory.id)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Heart 
+                              className={`h-4 w-4 ${
+                                memory.isFavorite 
+                                  ? "fill-red-500 text-red-500" 
+                                  : "text-muted-foreground"
+                              }`} 
+                            />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="space-y-3">
+                        {memory.fileUrl && memory.type === "photo" && (
+                          <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                            <img
+                              src={memory.fileUrl || "/placeholder.svg"}
+                              alt={memory.title || "Memory"}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        
+                        {memory.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-3">
+                            {memory.description}
+                          </p>
+                        )}
+                        
+                        <div className="flex flex-wrap items-center gap-2">
+                          {memory.mood && <MoodBadge mood={memory.mood} />}
+                          
+                          {memory.tags && memory.tags.length > 0 && (
+                            <>
+                              {memory.tags.slice(0, 3).map((tag, tagIndex) => (
+                                <Badge key={tagIndex} variant="outline" className="text-xs">
+                                  <Tag className="h-3 w-3 mr-1" />
+                                  {tag}
+                                </Badge>
+                              ))}
+                              {memory.tags.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{memory.tags.length - 3} more
+                                </Badge>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+                          <span>
+                            {memory.createdAt && format(new Date(memory.createdAt), "h:mm a")}
+                          </span>
+                          <Link 
+                            href={`/memory/${memory.id}`}
+                            className="text-primary hover:underline"
+                          >
+                            View Details
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

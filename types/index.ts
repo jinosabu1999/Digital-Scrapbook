@@ -14,10 +14,10 @@ export interface Memory {
   isTimeCapsule: boolean
   unlockDate?: Date
   mood?: MoodType
-  isLiked: boolean
+  isLiked: boolean // Renamed from isFavorite for consistency with toggleLike
   createdAt: Date
   updatedAt: Date
-  appliedFilter?: string
+  appliedFilter?: string // For image filters, if implemented
 }
 
 export interface Tag {
