@@ -14,8 +14,11 @@ export default function AlbumsPage() {
   const { albums, memories, loading } = useMemories()
   const [searchQuery, setSearchQuery] = useState("")
 
+  const safeAlbums = albums || []
+  const safeMemories = memories || []
+
   // Filter albums based on search query
-  const filteredAlbums = albums.filter(
+  const filteredAlbums = safeAlbums.filter(
     (album) =>
       album.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (album.description && album.description.toLowerCase().includes(searchQuery.toLowerCase())),
@@ -56,7 +59,7 @@ export default function AlbumsPage() {
         </div>
       </div>
 
-      {albums.length === 0 ? (
+      {safeAlbums.length === 0 ? (
         <EmptyState
           title="No Albums Yet"
           description="Create your first album to organize your memories"
@@ -84,7 +87,7 @@ export default function AlbumsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredAlbums.map((album) => {
             // Find the first memory in the album that has a mediaUrl (for thumbnail)
-            const albumMemories = memories.filter((m) => album.memories.includes(m.id))
+            const albumMemories = safeMemories.filter((m) => album.memories.includes(m.id))
             const thumbnailMemory = albumMemories.find((m) => m.mediaUrl && m.type === "photo")
 
             return (
