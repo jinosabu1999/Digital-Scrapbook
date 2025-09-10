@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RecentMemories } from "@/components/recent-memories"
-import { Plus, Heart, Clock, TrendingUp, Calendar, MapPin } from 'lucide-react'
+import { Plus, Heart, Clock, TrendingUp, Calendar, MapPin, Palette, Baseline as Timeline } from "lucide-react"
 import Link from "next/link"
 import { format, isAfter } from "date-fns"
 import { EmptyState } from "@/components/empty-state"
@@ -16,17 +16,19 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState("recent")
 
   const favoriteMemories = getFavoriteMemories()
-  const timeCapsules = memories.filter(memory => memory.isTimeCapsule && memory.unlockDate && isAfter(memory.unlockDate, new Date()))
+  const timeCapsules = memories.filter(
+    (memory) => memory.isTimeCapsule && memory.unlockDate && isAfter(memory.unlockDate, new Date()),
+  )
 
   const stats = {
     totalMemories: memories.length,
     favoriteMemories: favoriteMemories.length,
     timeCapsules: timeCapsules.length,
-    thisWeek: memories.filter(memory => {
+    thisWeek: memories.filter((memory) => {
       const weekAgo = new Date()
       weekAgo.setDate(weekAgo.getDate() - 7)
       return new Date(memory.createdAt) > weekAgo
-    }).length
+    }).length,
   }
 
   if (loading) {
@@ -243,17 +245,35 @@ export default function HomePage() {
           <CardDescription>Frequently used tools and shortcuts</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <Button asChild variant="outline" className="h-20 flex-col space-y-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Button asChild variant="outline" className="h-20 flex-col space-y-2 bg-transparent">
               <Link href="/upload">
                 <Plus className="h-8 w-8" />
                 <span>Add Memory</span>
               </Link>
             </Button>
-            <Button asChild variant="outline" className="h-20 flex-col space-y-2">
+            <Button asChild variant="outline" className="h-20 flex-col space-y-2 bg-transparent">
               <Link href="/favorites">
                 <Heart className="h-8 w-8" />
                 <span>Favorites</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-20 flex-col space-y-2 bg-transparent">
+              <Link href="/collage">
+                <Palette className="h-8 w-8" />
+                <span>Create Collage</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-20 flex-col space-y-2 bg-transparent">
+              <Link href="/timeline">
+                <Timeline className="h-8 w-8" />
+                <span>Timeline View</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-20 flex-col space-y-2 bg-transparent">
+              <Link href="/analytics">
+                <TrendingUp className="h-8 w-8" />
+                <span>Analytics</span>
               </Link>
             </Button>
           </div>

@@ -7,7 +7,22 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Edit, Trash2, Download, Calendar, MapPin, Tag, Clock, Loader2, ImageIcon, Video, Mic, FileText } from 'lucide-react'
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Download,
+  Calendar,
+  MapPin,
+  Tag,
+  Clock,
+  Loader2,
+  ImageIcon,
+  Video,
+  Mic,
+  FileText,
+  Palette,
+} from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
 import { EmptyState } from "@/components/empty-state"
@@ -40,7 +55,7 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
 
   const handleDelete = async () => {
     if (!memory) return
-    
+
     setIsDeleting(true)
     try {
       deleteMemory(memory.id)
@@ -70,22 +85,23 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
       })
       return
     }
-    
-    // For Base64 data URLs, create a blob and then a download link
-    const link = document.createElement('a')
-    link.href = memory.mediaUrl
-    
-    // Determine file extension based on type
-    let fileExtension = 'bin'
-    if (memory.type === 'photo') fileExtension = 'png' // Assuming most photos are png/jpg
-    else if (memory.type === 'video') fileExtension = 'mp4'
-    else if (memory.type === 'audio') fileExtension = 'mp3'
 
-    link.download = `${memory.title || 'memory'}.${fileExtension}`
+    // For Base64 data URLs, create a blob and then a download link
+    const link = document.createElement("a")
+    link.href = memory.mediaUrl
+
+    // Determine file extension based on type
+    let fileExtension = "bin"
+    if (memory.type === "photo")
+      fileExtension = "png" // Assuming most photos are png/jpg
+    else if (memory.type === "video") fileExtension = "mp4"
+    else if (memory.type === "audio") fileExtension = "mp3"
+
+    link.download = `${memory.title || "memory"}.${fileExtension}`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
-    
+
     toast({
       title: "Download Started",
       description: "Your memory is being downloaded.",
@@ -131,9 +147,7 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
               Back
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/upload">
-                Add Memory
-              </Link>
+              <Link href="/upload">Add Memory</Link>
             </Button>
           </div>
         </div>
@@ -148,7 +162,7 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
               <span className="hidden sm:inline">Download</span>
             </Button>
           )}
-          
+
           <Button variant="outline" size="sm" asChild>
             <Link href={`/memory/${memory.id}/edit`}>
               <Edit className="h-4 w-4 mr-2" />
@@ -156,16 +170,20 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
             </Link>
           </Button>
 
-          <FavoriteButton
-            memoryId={memory.id}
-            isLiked={memory.isLiked}
-            size="sm"
-            variant="outline"
-          />
+          {memory.type === "photo" && memory.mediaUrl && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/photo-editor/${memory.id}`}>
+                <Palette className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Edit Photo</span>
+              </Link>
+            </Button>
+          )}
+
+          <FavoriteButton memoryId={memory.id} isLiked={memory.isLiked} size="sm" variant="outline" />
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive bg-transparent">
                 <Trash2 className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Delete</span>
               </Button>
@@ -212,9 +230,7 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
                 </p>
                 <div className="space-y-2">
                   <h3 className="font-medium">{memory.title}</h3>
-                  {memory.description && (
-                    <p className="text-sm text-muted-foreground">{memory.description}</p>
-                  )}
+                  {memory.description && <p className="text-sm text-muted-foreground">{memory.description}</p>}
                 </div>
               </CardContent>
             </Card>
@@ -231,9 +247,7 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
                       {memory.type === "text" && <FileText className="h-5 w-5 text-muted-foreground" />}
                       <h1 className="text-2xl sm:text-3xl font-bold">{memory.title}</h1>
                     </div>
-                    {memory.description && (
-                      <p className="text-muted-foreground text-lg">{memory.description}</p>
-                    )}
+                    {memory.description && <p className="text-muted-foreground text-lg">{memory.description}</p>}
                   </div>
                   {memory.mood && (
                     <div className="flex-shrink-0">
@@ -249,18 +263,24 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
                   <CardContent className="p-0">
                     <div className="relative">
                       {memory.type === "photo" && (
-                        <img
-                          src={memory.mediaUrl || "/placeholder.svg"}
-                          alt={memory.title}
-                          className="w-full max-h-[70vh] object-contain rounded-lg"
-                        />
+                        <div className="relative">
+                          <img
+                            src={memory.mediaUrl || "/placeholder.svg"}
+                            alt={memory.title}
+                            className="w-full max-h-[70vh] object-contain rounded-lg"
+                          />
+                          <div className="absolute top-4 right-4">
+                            <Button size="sm" asChild className="shadow-lg">
+                              <Link href={`/photo-editor/${memory.id}`}>
+                                <Palette className="h-4 w-4 mr-2" />
+                                Edit Photo
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
                       )}
                       {memory.type === "video" && (
-                        <video
-                          src={memory.mediaUrl}
-                          controls
-                          className="w-full max-h-[70vh] rounded-lg"
-                        />
+                        <video src={memory.mediaUrl} controls className="w-full max-h-[70vh] rounded-lg" />
                       )}
                       {memory.type === "audio" && (
                         <div className="p-8 bg-muted rounded-lg">
@@ -335,11 +355,23 @@ export default function MemoryDetailPage({ params }: { params: { id: string } })
                         <div>
                           <p className="text-sm font-medium">Time Capsule</p>
                           <p className="text-sm text-muted-foreground">
-                            {memory.unlockDate 
+                            {memory.unlockDate
                               ? `Unlocks on ${format(new Date(memory.unlockDate), "MMMM d, yyyy")}`
-                              : "Time capsule memory"
-                            }
+                              : "Time capsule memory"}
                           </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {memory.appliedFilter && (
+                    <>
+                      <Separator />
+                      <div className="flex items-center gap-3">
+                        <Palette className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Photo Effects</p>
+                          <p className="text-sm text-muted-foreground">Custom effects applied</p>
                         </div>
                       </div>
                     </>

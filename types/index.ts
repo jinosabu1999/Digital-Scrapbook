@@ -25,3 +25,43 @@ export interface Tag {
   name: string
   count: number
 }
+
+export interface Collage {
+  id: string
+  title: string
+  description?: string
+  memoryIds: string[]
+  layout: CollageLayout
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type CollageLayout = "grid" | "mosaic" | "circular" | "diagonal" | "heart"
+
+export interface Achievement {
+  id: string
+  title: string
+  description: string
+  icon: string
+  category: AchievementCategory
+  requirement: number
+  unlockedAt?: Date
+  progress: number
+  isUnlocked: boolean
+  rarity: AchievementRarity
+}
+
+export type AchievementCategory = "memories" | "streaks" | "social" | "creative" | "explorer" | "collector"
+export type AchievementRarity = "common" | "rare" | "epic" | "legendary"
+
+export interface UserStats {
+  totalMemories: number
+  favoriteMemories: number
+  currentStreak: number
+  longestStreak: number
+  uniqueLocations: number
+  uniqueTags: number
+  photosWithEffects: number
+  collagesCreated: number
+  lastMemoryDate?: Date
+}
