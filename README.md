@@ -14,7 +14,7 @@ Any changes you make to your deployed app will be automatically pushed to this r
 
 Your project is live at:
 
-**[https://vercel.com/jinosabu1999s-projects/v0-digital-scrapbook-vj](https://vercel.com/jinosabu1999s-projects/v0-digital-scrapbook-vj)**
+**[https://vercel.com/jinosabu1999s-projects/v0-digital-scrapbook-vj](https://chronocapsule.vercel.com)**
 
 ## Build your app
 
